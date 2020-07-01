@@ -20,9 +20,14 @@ const environment string = "envs"
 
 const metrics string = "metreics"
 
-var _instance *Actuator
-var _iMutex *sync.Mutex = &sync.Mutex{}
-var _hcm *sync.Mutex = &sync.Mutex{}
+const up string = "UP"
+const down string = "DOWN"
+
+var (
+	a    *Actuator
+	once sync.Once
+	_hcm *sync.Mutex = &sync.Mutex{}
+)
 
 //Actuator is the base for all actuator information
 type Actuator struct {
@@ -51,38 +56,34 @@ type status struct {
 
 //HealthCheck is the mechanism to execute the user defined Check
 func (a *Actuator) HealthCheck() string {
-	//TODO look at thread saftey, this can be called by multiple sources simultaneously
-	//TODO do we want to throttle this?
 	_hcm.Lock()
 	defer _hcm.Unlock()
 	a.status.previous = a.status.current
 	if a.status.healthCheck != nil {
-		a.status.current = "UP"
+		a.status.current = up
 		if !a.status.healthCheck() {
-			a.status.current = "DOWN"
+			a.status.current = down
 		}
 	}
 	a.status.current = "Unknown, health check function not set"
-
 	return a.status.current
-
 }
 
-//NewActuator creates a new actuator
+//NewActuator creates a new actuator or returns the singleton Actuator
 func NewActuator(info *BuildInfo, check Check, port uint) *Actuator {
-	_iMutex.Lock()
-	defer _iMutex.Unlock()
-	if _instance == nil {
+
+	once.Do(func() {
 		a := &Actuator{Build: info}
 		if check != nil {
 			a.status.healthCheck = check
+			log.Println("Health Check function set")
 		}
 		a.port = port
 		if port <= 1024 || port > 65535 {
 			a.port = DefaultPort
 			log.Printf("port %d is not valid, using %d for Actuator", port, a.port)
 		}
-		_instance = a
-	}
-	return _instance
+		log.Println("Actuator initialized")
+	})
+	return a
 }
