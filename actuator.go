@@ -1,5 +1,10 @@
 package actuator
 
+import (
+	"log"
+	"sync"
+)
+
 //DefaultPort is the defalut port used to server actuator info if one is not given
 // or is not a valid port number
 const DefaultPort uint = 2121
@@ -14,6 +19,10 @@ const info string = "info"
 const environment string = "envs"
 
 const metrics string = "metreics"
+
+var _instance *Actuator
+var _iMutex *sync.Mutex = &sync.Mutex{}
+var _hcm *sync.Mutex = &sync.Mutex{}
 
 //Actuator is the base for all actuator information
 type Actuator struct {
@@ -44,6 +53,8 @@ type status struct {
 func (a *Actuator) HealthCheck() string {
 	//TODO look at thread saftey, this can be called by multiple sources simultaneously
 	//TODO do we want to throttle this?
+	_hcm.Lock()
+	defer _hcm.Unlock()
 	a.status.previous = a.status.current
 	if a.status.healthCheck != nil {
 		a.status.current = "UP"
@@ -52,18 +63,26 @@ func (a *Actuator) HealthCheck() string {
 		}
 	}
 	a.status.current = "Unknown, health check function not set"
+
 	return a.status.current
+
 }
 
 //NewActuator creates a new actuator
 func NewActuator(info *BuildInfo, check Check, port uint) *Actuator {
-	a := &Actuator{Build: info}
-	if check != nil {
-		a.status.healthCheck = check
+	_iMutex.Lock()
+	defer _iMutex.Unlock()
+	if _instance == nil {
+		a := &Actuator{Build: info}
+		if check != nil {
+			a.status.healthCheck = check
+		}
+		a.port = port
+		if port <= 1024 || port > 65535 {
+			a.port = DefaultPort
+			log.Printf("port %d is not valid, using %d for Actuator", port, a.port)
+		}
+		_instance = a
 	}
-	a.port = port
-	if port < 1024 || port > 65535 {
-		a.port = DefaultPort
-	}
-	return a
+	return _instance
 }
