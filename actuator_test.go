@@ -1,20 +1,26 @@
 package actuator
 
-import "testing"
+import (
+	"testing"
+)
 
-// type test info
-// var tests = []testpair{
-// 	{ []float64{1,2}, 1.5 },
-// 	{ []float64{1,1,1,1,1,1}, 1 },
-// 	{ []float64{-1,1}, 0 },
-//   }
 
 func TestNewActuator(t *testing.T) {
-	// b := &actBuildInfo{Name: "hambletor", Version: "version"}
-	// a := NewActuator(b, nil)
-	// if a.Build.Name != "hambletor" {
-	// 	t.Errorf("expecting %s, got %s\n", "hambletor", a.Build.Name)
-	// }
+	b := &BuildInfo{Name: "hambletor", Version: "version"}
+	a := NewActuator(b, nil,8888)
+	
+	if a.Build.Name != "hambletor" {
+		t.Errorf("expecting %s, got %s\n", "hambletor", a.Build.Name)
+	}
+}
+
+
+func TestNewActuatorBadPort(t *testing.T) {
+	b := &BuildInfo{Name: "hambletor", Version: "version"}
+	a := NewActuator(b, nil,1)
+	if a.port != DefaultPort{
+		t.Errorf("expecting %d, got %d\n", DefaultPort, a.port)
+	}
 }
 
 func TestActuatorHealthCehck(*testing.T) {

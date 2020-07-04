@@ -10,16 +10,16 @@ import (
 
 const (
 	health      string = "/health/"
-	info        string = "//info/"
+	info        string = "/info/"
 	environment string = "/envs/"
-	metrics     string = "/metreics/"
-	//history string = "/actuator/history/"
+	metrics     string = "/metrics/"
 )
 
 //HTTP Handlers for each endpoint
 
 func (a Actuator) healthHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Printf("%s called\n",health)
 		a.HealthCheck()
 		w.Write(marshal(a.status))
 	}
@@ -27,24 +27,27 @@ func (a Actuator) healthHandler() http.HandlerFunc {
 
 func (a Actuator) envHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Printf("%s called\n",environment)
 		w.Write(envs())
 	}
 }
 
 func (a Actuator) metricsHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Printf("%s called\n",metrics)
 		w.Write(stats())
 	}
 }
 
 func (a Actuator) infoHandler() http.HandlerFunc {
+	log.Printf("%s called\n",info)
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Write(marshal(a.Build))
 	}
 }
 
 func marshal(o interface{}) []byte {
-	b, err := json.Marshal(a.Build)
+	b, err := json.Marshal(o)
 	if err != nil {
 		log.Printf("issue marshaling Acutator Build Info: %s", err.Error())
 		b = []byte("unable to mashal data")

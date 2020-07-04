@@ -15,7 +15,7 @@ const up string = "UP"
 const down string = "DOWN"
 
 var (
-	a    *Actuator
+	singleton    *Actuator
 	once sync.Once
 	_hcm *sync.Mutex = &sync.Mutex{}
 )
@@ -63,23 +63,23 @@ func (a *Actuator) HealthCheck() {
 //NewActuator creates a new actuator or returns the singleton Actuator
 func NewActuator(info *BuildInfo, check Check, port uint) *Actuator {
 	once.Do(func() {
-		a := &Actuator{Build: info}
+		singleton = &Actuator{Build: info, port:port}
 		if check != nil {
-			a.status.healthCheck = check
+			singleton.status.healthCheck = check
 			log.Println("Health Check function set")
 		}
-		a.port = port
 		if port <= 1024 || port > 65535 {
-			a.port = DefaultPort
-			log.Printf("port %d is not valid, using %d for Actuator", port, a.port)
+			singleton.port = DefaultPort
+			log.Printf("port %d is not valid, using %d for Actuator", port, singleton.port)
 		}
-		// start http listener in seperate go routine
-		go a.start()
 		log.Println("Actuator initialized")
+		singleton.start()
+		log.Println("Actuator started")
 	})
-	return a
+	return singleton
 }
 
+//start starts up the internal http listener
 func (a Actuator) start() {
 	// init and start http server
 	http.HandleFunc(health, a.healthHandler())
@@ -88,7 +88,9 @@ func (a Actuator) start() {
 	http.HandleFunc(environment, a.envHandler())
 
 	//spawn seperate listener
-	go func(){
-	http.ListenAndServe(":"+strconv.Itoa(int(a.port)),nil)
+	go func() {
+		log.Println("starting actuator listener")
+		http.ListenAndServe(":"+strconv.Itoa(int(a.port)), nil)
 	}()
 }
+
