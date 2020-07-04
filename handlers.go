@@ -8,6 +8,14 @@ import (
 	"runtime"
 )
 
+const (
+	health      string = "/health/"
+	info        string = "//info/"
+	environment string = "/envs/"
+	metrics     string = "/metreics/"
+	//history string = "/actuator/history/"
+)
+
 //HTTP Handlers for each endpoint
 
 func (a Actuator) healthHandler() http.HandlerFunc {
@@ -17,7 +25,7 @@ func (a Actuator) healthHandler() http.HandlerFunc {
 	}
 }
 
-func (a Actuator)envHandler() http.HandlerFunc {
+func (a Actuator) envHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Write(envs())
 	}

@@ -2,24 +2,14 @@ package actuator
 
 import (
 	"log"
-	"sync"
 	"net/http"
+	"strconv"
+	"sync"
 )
 
 //DefaultPort is the defalut port used to server actuator info if one is not given
 // or is not a valid port number
 const DefaultPort uint = 2121
-
-// Health is the path for health check results
-const Health string = "/actuator/health/"
-
-// const history string = "/actuator/history/"
-
-const info string = "/actuator/info/"
-
-const environment string = "/actuator/envs/"
-
-const metrics string = "/acutator/metreics/"
 
 const up string = "UP"
 const down string = "DOWN"
@@ -92,7 +82,13 @@ func NewActuator(info *BuildInfo, check Check, port uint) *Actuator {
 
 func (a Actuator) start() {
 	// init and start http server
-	http.HandleFunc(Health,a.healthHandler())
-	http.HandleFunc(info,a.infoHandler())
-}
+	http.HandleFunc(health, a.healthHandler())
+	http.HandleFunc(info, a.infoHandler())
+	http.HandleFunc(metrics, a.metricsHandler())
+	http.HandleFunc(environment, a.envHandler())
 
+	//spawn seperate listener
+	go func(){
+	http.ListenAndServe(":"+strconv.Itoa(int(a.port)),nil)
+	}()
+}
